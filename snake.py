@@ -45,6 +45,18 @@ class Head(Obj):
     def move(self):
         self.canvas.move(self.id, self.stepx, self.stepy)
         self.pos = Pos(self.pos.x + self.stepx, self.pos.y + self.stepy)
+        if self.pos.x > 400:
+            self.canvas.move(self.id, -400, 0)
+            self.pos.x -= 400
+        elif self.pos.x < 0:
+            self.canvas.move(self.id, 400, 0)
+            self.pos.x += 400
+        elif self.pos.y > 400:
+            self.canvas.move(self.id, 0, -400)
+            self.pos.y -= 400
+        elif self.pos.y < 0:
+            self.canvas.move(self.id, 0, 400)
+            self.pos.y += 400
 
     def delete(self):
         self.canvas.delete(self.id)
@@ -70,18 +82,18 @@ class Tail(Obj):
 class Snake:
     def __init__(self, canvas, pos, color='Green'):
         self.canvas = canvas
-        self.lenght = 6
+        self.lenght = 7
 
         self.bodies = []
         self.bodies.append(Tail(canvas, pos, color))
 
         self.bodyPos = []
-        for x in range(pos.x, pos.x - 6 + 6 * self.lenght):
+        for x in range(pos.x, pos.x - 7 + 7 * self.lenght):
             self.bodyPos = [Pos(x, pos.y)] + self.bodyPos
-            if (x - pos.x) in range(6, pos.x - 6 + 6 * self.lenght, 6):
+            if (x - pos.x) in range(7, pos.x - 7 + 7 * self.lenght, 7):
                 self.bodies = [Bodies(canvas, Pos(x, pos.y), color)] + self.bodies
 
-        x = pos.x - 6 + 6 * self.lenght
+        x = pos.x - 7 + 7 * self.lenght
         self.head = Head(canvas, 'Right', Pos(x, pos.y), color)
 
     def move(self):
@@ -89,14 +101,14 @@ class Snake:
         del self.bodyPos[-1]
         self.head.move()
 
-        i = 5
+        i = 6
         for body in self.bodies:
             taget = self.bodyPos[i]
             x = taget.x - body.pos.x
             y = taget.y - body.pos.y
             body.pos = taget
             self.canvas.move(body.id, x, y)
-            i += 6
+            i += 7
 
     def isDie(self):
         if self.head.pos in self.bodyPos:
@@ -112,20 +124,20 @@ class Snake:
         x = self.head.pos.x
         y = self.head.pos.y
         if self.head.direct == 'Left':
-            x = self.head.pos.x - 6
-            for i in range(x + 5, x - 1, -1):
+            x = self.head.pos.x - 7
+            for i in range(x + 6, x - 1, -1):
                 self.bodyPos = [Pos(i, y)] + self.bodyPos
         elif self.head.direct == 'Right':
-            x = self.head.pos.x + 6
-            for i in range(x - 5, x + 1):
+            x = self.head.pos.x + 7
+            for i in range(x - 6, x + 1):
                 self.bodyPos = [Pos(i, y)] + self.bodyPos
         elif self.head.direct == 'Up':
-            y = self.head.pos.y - 6
-            for i in range(y + 5, y - 1, -1):
+            y = self.head.pos.y - 7
+            for i in range(y + 6, y - 1, -1):
                 self.bodyPos = [Pos(x, i)] + self.bodyPos
         else:
-            y = self.head.pos.y + 6
-            for i in range(y - 5, y + 1):
+            y = self.head.pos.y + 7
+            for i in range(y - 6, y + 1):
                 self.bodyPos = [Pos(x, i)] + self.bodyPos
 
         self.head = Head(self.canvas, self.head.direct, Pos(x, y), self.head.color)
@@ -137,38 +149,67 @@ class Snake:
         lt = headPos.x - 13
         rt = headPos.x + 13
 
-        foodPos = self.canvas.coords(food.id)
+        foodPos = self.canvas.coords(food.normal.id)
         if foodPos[1] >= tp and foodPos[3] <= bm:
             if foodPos[0] >= lt and foodPos[2] <= rt:
+                food.normal.delete()
                 return True
         return False
 
-# class BotSnake(Snake):
-#     def __init__(self, canvas, pos, color='Yellow'):
-#         Snake.__init__(self, canvas, pos, color)
 
-#     def autoMove(self)
+class BotSnake(Snake):
+    def __init__(self, canvas, pos, color='Yellow'):
+        Snake.__init__(self, canvas, pos, color)
+        self.step = None
 
+    def huntFood(self, food):
+        self.food = food
+        taget = food.normal
+        head = self.head
+        if head.direct == 'Left' or head.direct == 'Right':
+            if head.pos.y < taget.pos.y:
+                self.step = [Pos(taget.pos.x, head.pos.y), 'Down']
+            elif head.pos.y > taget.pos.y:
+                self.step = [Pos(taget.pos.x, head.pos.y), 'Up']
+        else:
+            if head.pos.x < taget.pos.x:
+                self.step = [Pos(head.pos.x, taget.pos.y), 'Right']
+            elif head.pos.x > taget.pos.x:
+                self.step = [Pos(head.pos.x, taget.pos.y), 'Left']
 
-class Foods:
-    def __init__(self, canvas, pos, color='red'):
-        self.point = 8
-        self.canvas = canvas
-        self.id = canvas.create_oval(0, 0, 5, 5, fill=color, outline=color)
-        self.canvas.move(self.id, pos.x, pos.y)
+    def isBlock(self, hurdle):
+        x = self.head.pos.x + self.head.stepx * 1
+        y = self.head.pos.y + self.head.stepy * 1
+        nextPos = Pos(x, y)
+        if nextPos in hurdle:
+            return True
+        return False
 
+    def move(self):
+        if self.step is not None:
+            turnPoint = self.step[0]
+            direct = self.step[1]
+            if self.head.pos == turnPoint:
+                self.head.changeDirect(direct)
+                self.step = None
 
-class BigFoods:
-    def __init__(self, canvas, pos, color='red'):
-        self.point = 400
-        self.canvas = canvas
-        self.id = canvas.create_oval(0, 0, 30, 30, fill=color, outline=color)
-        self.canvas.move(self.id, pos.x - 15, pos.y - 15)
+        if self.isBlock(self.bodyPos):
+            if self.head.direct == 'Left' or self.head.direct == 'Right':
+                self.head.changeDirect('Up')
+                if self.isBlock(self.bodyPos):
+                    self.head.changeDirect('Down')
+            else:
+                self.head.changeDirect('Left')
+                if self.isBlock(self.bodyPos):
+                    self.head.changeDirect('Right')
+            self.huntFood(self.food)
+
+        Snake.move(self)
 
 
 if __name__ == '__main__':
     window = tk.Tk()
-    canvas = tk.Canvas(window, width=600, height=600)
+    canvas = tk.Canvas(window, width=700, height=700)
     canvas.pack()
 
     # h = Head(canvas, grid, 'Up', Pos(100, 100), 'Green')
