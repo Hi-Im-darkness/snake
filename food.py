@@ -6,8 +6,8 @@ from snake import Pos
 
 
 def randomPos(width, height):
-    x = random.randint(50, width - 50)
-    y = random.randint(50, height - 50)
+    x = random.choice(range(50, width - 50, 5))
+    y = random.choice(range(50, height - 50, 5))
     return Pos(x, y)
 
 

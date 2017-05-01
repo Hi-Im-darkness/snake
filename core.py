@@ -87,6 +87,10 @@ class GameBot:
             self.snake.grow()
             self.snake.huntFood(self.food)
 
+        # print(self.snake.step[0].x, self.snake.step[0].y, self.snake.step[1])
+        # print(self.snake.head.pos.x, self.snake.head.pos.y)
+        # print()
+
         self.snake.move()
         if self.snake.isDie():
             self.die = True
@@ -95,13 +99,20 @@ class GameBot:
 
 if __name__ == '__main__':
     g = GameBot()
+    i = 0
     while True:
+        # i += 1
+        # if i == 3:
+        #     break
+        # for b in g.snake.bodyPos:
+        #     print(b.x, b.y)
+        # print(g.snake.bodyPos[-1].x, g.snake.bodyPos[-1].y)
+        # print()
         g.play()
         # print(len(g.snake.bodies))
         # print(len(g.snake.bodyPos))
         # print()
         if g.die:
             break
-        time.sleep(0.000005)
-
+        time.sleep(0.003)
     GameBot.window.mainloop()
