@@ -13,31 +13,14 @@ class Pos:
         return False
 
 
-class Direction:
-    def __init__(self, direct):
-        self.value = direct
-        self.update(direct)
-
-    def update(self, direct):
-        if direct == 'Left':
-            self.stepx = -1
-            self.stepy = 0
-        elif direct == 'Right':
-            self.stepx = 1
-            self.stepy = 0
-        elif direct == 'Up':
-            self.stepx = 0
-            self.stepy = -1
-        else:
-            self.stepx = 0
-            self.stepy = 1
-
-
 class Obj:
     def __init__(self, canvas, pos, color):
         self.canvas = canvas
         self.pos = pos
         self.color = color
+
+    def delete(self):
+        self.canvas.delete(self.id)
 
 
 class Head(Obj):
@@ -78,9 +61,6 @@ class Head(Obj):
             self.canvas.move(self.id, 0, 400)
             self.pos.y += 400
 
-    def delete(self):
-        self.canvas.delete(self.id)
-
 
 class Bodies(Obj):
     def __init__(self, canvas, pos, color='Green'):
@@ -95,40 +75,48 @@ class Tail(Obj):
         self.image = tk.PhotoImage(file='Asset/%s/Tail.gif' % color)
         self.id = self.canvas.create_image(self.pos.x, self.pos.y, anchor=tk.CENTER, image=self.image)
 
-    def delete(self):
-        self.canvas.delete(self.id)
-
 
 class Snake:
     def __init__(self, canvas, pos, color='Green'):
         self.canvas = canvas
-        self.lenght = 7
+        self.lenght = 10
 
         self.bodies = []
         self.bodies.append(Tail(canvas, pos, color))
 
         self.bodyPos = []
-        for x in range(pos.x, pos.x - 7 + 7 * self.lenght):
+        for x in range(pos.x, pos.x - 5 + 5 * self.lenght):
             self.bodyPos = [Pos(x, pos.y)] + self.bodyPos
-            if (x - pos.x) in range(7, pos.x - 7 + 7 * self.lenght, 7):
+            if (x - pos.x) in range(1, pos.x - 5 + 5 * self.lenght, 5):
                 self.bodies = [Bodies(canvas, Pos(x, pos.y), color)] + self.bodies
 
-        x = pos.x - 7 + 7 * self.lenght
+        x = pos.x - 5 + 5 * self.lenght
         self.head = Head(canvas, 'Right', Pos(x, pos.y), color)
 
     def move(self):
-        self.bodyPos = [self.head.pos] + self.bodyPos
-        del self.bodyPos[-1]
-        self.head.move()
+        self.grow()
+        self.lenght -= 1
 
-        i = 6
-        for body in self.bodies:
-            taget = self.bodyPos[i]
-            x = taget.x - body.pos.x
-            y = taget.y - body.pos.y
-            body.pos = taget
-            self.canvas.move(body.id, x, y)
-            i += 7
+        self.bodies[-1].delete()
+        self.bodies[-2].delete()
+
+        self.bodies[-2] = Tail(self.canvas, self.bodies[-2].pos, self.bodies[-2].color)
+        del self.bodies[-1]
+        for i in range(5):
+            del self.bodyPos[-1]
+
+        if self.head.pos.x > 400:
+            self.canvas.move(self.head.id, -400, 0)
+            self.head.pos.x -= 400
+        elif self.head.pos.x < 0:
+            self.canvas.move(self.head.id, 400, 0)
+            self.head.pos.x += 400
+        elif self.head.pos.y > 400:
+            self.canvas.move(self.head.id, 0, -400)
+            self.head.pos.y -= 400
+        elif self.head.pos.y < 0:
+            self.canvas.move(self.head.id, 0, 400)
+            self.head.pos.y += 400
 
     def isDie(self):
         if self.head.pos in self.bodyPos:
@@ -144,20 +132,20 @@ class Snake:
         x = self.head.pos.x
         y = self.head.pos.y
         if self.head.direct == 'Left':
-            x = self.head.pos.x - 7
-            for i in range(x + 6, x - 1, -1):
+            x = self.head.pos.x - 5
+            for i in range(x + 5, x, -1):
                 self.bodyPos = [Pos(i, y)] + self.bodyPos
         elif self.head.direct == 'Right':
-            x = self.head.pos.x + 7
-            for i in range(x - 6, x + 1):
+            x = self.head.pos.x + 5
+            for i in range(x - 5, x):
                 self.bodyPos = [Pos(i, y)] + self.bodyPos
         elif self.head.direct == 'Up':
-            y = self.head.pos.y - 7
-            for i in range(y + 6, y - 1, -1):
+            y = self.head.pos.y - 5
+            for i in range(y + 5, y, -1):
                 self.bodyPos = [Pos(x, i)] + self.bodyPos
         else:
-            y = self.head.pos.y + 7
-            for i in range(y - 6, y + 1):
+            y = self.head.pos.y + 5
+            for i in range(y - 5, y):
                 self.bodyPos = [Pos(x, i)] + self.bodyPos
 
         self.head = Head(self.canvas, self.head.direct, Pos(x, y), self.head.color)
@@ -198,8 +186,8 @@ class BotSnake(Snake):
                 self.step = [Pos(head.pos.x, taget.pos.y), 'Left']
 
     def isBlock(self, hurdle):
-        x = self.head.pos.x + self.head.stepx * 1
-        y = self.head.pos.y + self.head.stepy * 1
+        x = self.head.pos.x + self.head.stepx * 5
+        y = self.head.pos.y + self.head.stepy * 5
         nextPos = Pos(x, y)
         if nextPos in hurdle:
             return True
@@ -229,14 +217,14 @@ class BotSnake(Snake):
 
 if __name__ == '__main__':
     window = tk.Tk()
-    canvas = tk.Canvas(window, width=700, height=700)
+    canvas = tk.Canvas(window, width=400, height=400)
     canvas.pack()
 
     # h = Head(canvas, grid, 'Up', Pos(100, 100), 'Green')
     s = Snake(canvas, Pos(100, 100))
 
     while True:
-        time.sleep(1)
+        time.sleep(0.01)
         # canvas.bind_all('<KeyPress>', .keyPress)
         s.move()
         canvas.update()
