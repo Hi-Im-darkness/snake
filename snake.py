@@ -1,6 +1,7 @@
 import tkinter as tk
 import time
 from other import *
+from food import *
 
 
 class Pieces:
@@ -32,6 +33,17 @@ class Head(Pieces):
         if self.id is not None:
             self.canvas.delete(self.id)
         self.id = self.canvas.create_image(self.pos.x, self.pos.y, anchor=tk.CENTER, image=self.image)
+
+    def frontPos(self):
+        return self.pos + Pos(self.direct.stepx, self.direct.stepy)
+
+    def leftPos(self):
+        ltDirect = self.direct.left()
+        return self.pos + Pos(ltDirect.stepx, ltDirect.stepy)
+
+    def rightPos(self):
+        rtDirect = self.direct.right()
+        return self.pos + Pos(rtDirect.stepx, rtDirect.stepy)
 
 
 class Bodies(Pieces):
@@ -86,7 +98,7 @@ class Snake:
         self.tail = Tail(self.canvas, self.bodies[-1].pos.x, self.bodies[-1].pos.y, self.bodies[-1].color)
         del self.bodies[-1]
         for i in range(5):
-            del self.bodyPos[-1]
+            self.bodyPos.pop()
 
         width = 400
         height = 400
@@ -100,8 +112,8 @@ class Snake:
             self.head.move(0, height)
 
     def isDie(self, enemy=None):
-        anotherBP = enemy.bodyPos if enemy is not None else []
-        if self.head.pos in self.bodyPos + anotherBP:
+        hurdle = enemy.bodyPos if enemy is not None else []
+        if self.head.pos in self.bodyPos + hurdle:
             return True
         return False
 
@@ -120,8 +132,53 @@ class Snake:
         return False
 
 
+class BotSnake(Snake):
+    def __init__(self, canvas, x, y, direct='Right', color='Yellow'):
+        Snake.__init__(self, canvas, x, y, direct, color)
+
+    def findDirect(self, food, enemy):
+        isDie = True
+        disDict = {}
+        hurdle = [] if enemy is None else enemy.bodyPos
+        for h in hurdle:
+            print(h)
+        hurdle += self.bodyPos
+
+        for d in ('front', 'left', 'right'):
+            getPos = getattr(self.head, '%sPos' % d)
+            pos = getPos()
+            if pos in hurdle:
+                continue
+            isDie = False
+            dist = distance(pos, food.normal.pos)
+            if dist in disDict:
+                disDict[dist].append(d)
+            else:
+                disDict[dist] = [d]
+
+        if isDie:
+            return -1
+
+        disList = list(disDict.keys())
+        disList.sort()
+
+        res = disDict[disList[0]][0]
+        if res == 'front':
+            return -1
+        elif res == 'left':
+            return self.head.direct.left().value
+        else:
+            return self.head.direct.right().value
+
+    def move(self, food, enemy=None):
+        direct = self.findDirect(food, enemy)
+        if direct != -1:
+            self.head.changeDirect(direct)
+        Snake.move(self)
+
+
 def keyPress(event):
-    headD = s.head.direct.value
+    headD = s2.head.direct.value
     if headD == 'Left' and (event.keysym == 'Right' or event.keysym == headD):
         return
     if headD == 'Right' and (event.keysym == 'Left' or event.keysym == headD):
@@ -131,7 +188,7 @@ def keyPress(event):
     if headD == 'Up' and (event.keysym == 'Down' or event.keysym == headD):
         return
 
-    s.head.changeDirect(event.keysym)
+    s2.head.changeDirect(event.keysym)
 
 
 if __name__ == '__main__':
@@ -139,13 +196,23 @@ if __name__ == '__main__':
     canvas = tk.Canvas(window, width=400, height=400)
     canvas.pack()
 
-    s = Snake(canvas, 100, 100)
+    s1 = BotSnake(canvas, 100, 100)
+    s2 = BotSnake(canvas, 100, 300)
+    f = Foods(canvas)
+    f.add()
 
     while True:
-        s.move()
-        if s.isDie():
-            break
-        canvas.bind_all('<KeyPress>', keyPress)
+        if s1.getFood(f):
+            f.add()
+            s1.grow()
+        if s2.getFood(f):
+            f.add()
+            s2.grow()
+        s1.move(f)
+        s2.move(f)
+        # if s2.isDie():
+        #     break
+        # canvas.bind_all('<KeyPress>', keyPress)
         canvas.update()
-        time.sleep(0.03)
+        time.sleep(0.0004)
     window.mainloop()

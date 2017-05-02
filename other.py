@@ -1,4 +1,5 @@
 import random
+import math
 
 
 class Pos:
@@ -22,8 +23,19 @@ class Pos:
     # def __radd__(self, value):
     #     return self.__add__(self, value)
 
-    def distance(self, value):
-        return (self.x - value.x) ** 2 + (self.y - value.y) ** 2
+
+def distance(pos1, pos2):
+    width = 400
+    height = 400
+
+    diffx = abs(pos1.x - pos2.x)
+    diffy = abs(pos1.y - pos2.y)
+
+    if diffx > width / 2:
+        diffx = width - diffx
+    if diffy > height / 2:
+        diffy = height - diffy
+    return diffx + diffy
 
 
 class Direction:
@@ -34,17 +46,31 @@ class Direction:
     def update(self, direct):
         self.value = direct
         if direct == 'Left':
+            self.lt = 'Down'
+            self.rt = 'Up'
             self.stepx = -5
             self.stepy = 0
         elif direct == 'Right':
+            self.lt = 'Up'
+            self.rt = 'Down'
             self.stepx = 5
             self.stepy = 0
         elif direct == 'Up':
+            self.lt = 'Left'
+            self.rt = 'Right'
             self.stepx = 0
             self.stepy = -5
         else:
+            self.lt = 'Right'
+            self.rt = 'Left'
             self.stepx = 0
             self.stepy = 5
+
+    def left(self):
+        return Direction(self.lt)
+
+    def right(self):
+        return Direction(self.rt)
 
 
 def rangePos(start, stop):

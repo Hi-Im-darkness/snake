@@ -24,4 +24,4 @@ class Foods:
         #     self.normal.delete()
 
         pos = randomPos(400, 400)
-        self.normal = NormalFood(self.canvas, pos.x, pos, y)
+        self.normal = NormalFood(self.canvas, pos.x, pos.y)
