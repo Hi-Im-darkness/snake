@@ -66,6 +66,21 @@ class Direction:
             self.stepx = 0
             self.stepy = 5
 
+    def __eq__(self, taget):
+        if self.value == taget.value:
+            return True
+        return False
+
+    def __neg__(self):
+        if self.value == 'Left':
+            return Direction('Right')
+        elif self.value == 'Right':
+            return Direction('Left')
+        elif self.value == 'Up':
+            return Direction('Down')
+        else:
+            return Direction('Up')
+
     def left(self):
         return Direction(self.lt)
 
@@ -99,6 +114,19 @@ def randomPos(width, height):
     x = random.choice(range(50, width - 50, 5))
     y = random.choice(range(50, height - 50, 5))
     return Pos(x, y)
+
+
+class Setting:
+    def __init__(self, arrowControl=True, DBBY=True, speed=0):
+        self.arrowControl = arrowControl
+        self.DBBY = DBBY  # die by bit yourself
+        self.speed = speed
+        if speed == 0:
+            self.TS = 0.04  # time sleep
+        elif speed == -1:
+            self.TS = 0.16
+        else:
+            self.TS = 0.01
 
 
 if __name__ == '__main__':

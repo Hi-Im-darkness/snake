@@ -19,19 +19,24 @@ class Pieces:
 
 
 class Head(Pieces):
-    def __init__(self, canvas, x, y, direct, color='Green'):
+    def __init__(self, canvas, x, y, direct, color):
         Pieces.__init__(self, canvas, x, y, color)
         self.id = None
-        self.changeDirect(direct)
+        self.direct = None
+        self.changeDirect(Direction(direct))
 
-    def changeDirect(self, direct):
-        self.direct = Direction(direct)
+    def changeDirect(self, direction, event=None):
+        if self.direct is not None:
+            if self.direct == direction or self.direct == -direction:
+                return
+
+        self.direct = direction
         self.image = tk.PhotoImage(file='Asset/%s/Head/%s.gif' % (self.color, self.direct.value))
         self.update()
 
     def update(self):
         if self.id is not None:
-            self.canvas.delete(self.id)
+            self.delete()
         self.id = self.canvas.create_image(self.pos.x, self.pos.y, anchor=tk.CENTER, image=self.image)
 
     def frontPos(self):
@@ -47,14 +52,14 @@ class Head(Pieces):
 
 
 class Bodies(Pieces):
-    def __init__(self, canvas, x, y, color='Green'):
+    def __init__(self, canvas, x, y, color):
         Pieces.__init__(self, canvas, x, y, color)
         self.image = tk.PhotoImage(file='Asset/%s/Body.gif' % color)
         self.id = self.canvas.create_image(self.pos.x, self.pos.y, anchor=tk.CENTER, image=self.image)
 
 
 class Tail(Pieces):
-    def __init__(self, canvas, x, y, color='Green'):
+    def __init__(self, canvas, x, y, color):
         Pieces.__init__(self, canvas, x, y, color)
         self.image = tk.PhotoImage(file='Asset/%s/Tail.gif' % color)
         self.id = self.canvas.create_image(self.pos.x, self.pos.y, anchor=tk.CENTER, image=self.image)
@@ -63,6 +68,7 @@ class Tail(Pieces):
 class Snake:
     def __init__(self, canvas, x, y, direct='Right', color='Green'):
         self.canvas = canvas
+
         self.lenght = 2
 
         self.tail = Tail(canvas, x, y, color)
@@ -73,10 +79,13 @@ class Snake:
 
         self.bodyPos = []
         for pos in rangePos(self.tail.pos, self.head.pos):
-            self.bodyPos = [pos] + self.bodyPos
+            self.bodyPos.insert(0, pos)
 
         for i in range(4):
             self.grow()
+
+    def changeSetting(self, stg):
+        self.setting = stg
 
     def grow(self):
         self.lenght += 1
@@ -86,19 +95,19 @@ class Snake:
         self.head.update()
 
         for pos in rangePos(self.bodies[0].pos, self.head.pos):
-            self.bodyPos = [pos] + self.bodyPos
+            self.bodyPos.insert(0, pos)
 
     def move(self):
-        self.grow()
-        self.lenght -= 1
-
         self.bodies[-1].delete()
         self.tail.delete()
 
         self.tail = Tail(self.canvas, self.bodies[-1].pos.x, self.bodies[-1].pos.y, self.bodies[-1].color)
-        del self.bodies[-1]
+        self.bodies.pop()
         for i in range(5):
             self.bodyPos.pop()
+
+        self.grow()
+        self.lenght -= 1
 
         width = 400
         height = 400
@@ -112,8 +121,12 @@ class Snake:
             self.head.move(0, height)
 
     def isDie(self, enemy=None):
-        hurdle = enemy.bodyPos if enemy is not None else []
-        if self.head.pos in self.bodyPos + hurdle:
+        hurdle = enemy.bodyPos + [enemy.head.pos] if enemy is not None else []
+
+        if self.setting.DBBY:
+            hurdle = hurdle + self.bodyPos
+
+        if self.head.pos in hurdle:
             return True
         return False
 
@@ -127,9 +140,15 @@ class Snake:
         nFoodPos = food.normal.pos
         if nFoodPos.y >= tp and nFoodPos.y <= bm:
             if nFoodPos.x >= lt and nFoodPos.x <= rt:
-                food.normal.delete()
                 return True
         return False
+
+    def disappear(self):
+        self.head.delete()
+        self.tail.delete()
+        for b in self.bodies:
+            b.delete()
+        self.bodyPos.clear()
 
 
 class BotSnake(Snake):
@@ -139,10 +158,10 @@ class BotSnake(Snake):
     def findDirect(self, food, enemy):
         isDie = True
         disDict = {}
-        hurdle = [] if enemy is None else enemy.bodyPos
-        for h in hurdle:
-            print(h)
-        hurdle += self.bodyPos
+        hurdle = [] if enemy is None else enemy.bodyPos + [enemy.head.pos]
+
+        if self.setting.DBBY:
+            hurdle = hurdle + self.bodyPos
 
         for d in ('front', 'left', 'right'):
             getPos = getattr(self.head, '%sPos' % d)
@@ -173,46 +192,56 @@ class BotSnake(Snake):
     def move(self, food, enemy=None):
         direct = self.findDirect(food, enemy)
         if direct != -1:
-            self.head.changeDirect(direct)
+            self.head.changeDirect(Direction(direct))
         Snake.move(self)
 
 
-def keyPress(event):
-    headD = s2.head.direct.value
-    if headD == 'Left' and (event.keysym == 'Right' or event.keysym == headD):
-        return
-    if headD == 'Right' and (event.keysym == 'Left' or event.keysym == headD):
-        return
-    if headD == 'Down' and (event.keysym == 'Up' or event.keysym == headD):
-        return
-    if headD == 'Up' and (event.keysym == 'Down' or event.keysym == headD):
-        return
+# def keyPress1(event):
+#     headD = s2.head.direct.value
+#     if headD == 'Left' and (event.keysym == 'Right' or event.keysym == headD):
+#         return
+#     if headD == 'Right' and (event.keysym == 'Left' or event.keysym == headD):
+#         return
+#     if headD == 'Down' and (event.keysym == 'Up' or event.keysym == headD):
+#         return
+#     if headD == 'Up' and (event.keysym == 'Down' or event.keysym == headD):
+#         return
 
-    s2.head.changeDirect(event.keysym)
+#     s2.head.changeDirect(event.keysym)
 
 
-if __name__ == '__main__':
-    window = tk.Tk()
-    canvas = tk.Canvas(window, width=400, height=400)
-    canvas.pack()
+# if __name__ == '__main__':
+#     window = tk.Tk()
+#     canvas = tk.Canvas(window, width=400, height=400)
+#     canvas.pack()
 
-    s1 = BotSnake(canvas, 100, 100)
-    s2 = BotSnake(canvas, 100, 300)
-    f = Foods(canvas)
-    f.add()
+#     s1 = BotSnake(canvas, 100, 100)
+#     s2 = Snake(canvas, 100, 300)
+#     # for i in range(50):
+#     #     s2.grow()
+#     f = Foods(canvas)
+#     f.add()
 
-    while True:
-        if s1.getFood(f):
-            f.add()
-            s1.grow()
-        if s2.getFood(f):
-            f.add()
-            s2.grow()
-        s1.move(f)
-        s2.move(f)
-        # if s2.isDie():
-        #     break
-        # canvas.bind_all('<KeyPress>', keyPress)
-        canvas.update()
-        time.sleep(0.0004)
-    window.mainloop()
+#     while True:
+#         if s1.getFood(f):
+#             f.add()
+#             # s2.grow()
+#             # s2.grow()
+#             # s2.grow()
+#             s1.grow()
+#             # s2.grow()
+#         if s2.getFood(f):
+#             f.add()
+#             s2.grow()
+#         s1.move(f, s2)
+#         s2.move()
+#         if s2.isDie(s1):
+#             print('s2 die')
+#             break
+#         if s1.isDie(s2):
+#             print('s1 die')
+#             break
+#         canvas.bind_all('<KeyPress>', keyPress)
+#         canvas.update()
+#         time.sleep(0.04)
+#     window.mainloop()
