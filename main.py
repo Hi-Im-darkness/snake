@@ -97,6 +97,7 @@ def PlayerVsBot():
 
     _thread.start_new_thread(player.play, ())
     _thread.start_new_thread(bot.play, ())
+    # bot.play()
 
 
 if __name__ == '__main__':
@@ -107,7 +108,7 @@ if __name__ == '__main__':
     canvas.pack()
 
     # OnePlayer()
-    TwoPlayer()
-    # PlayerVsBot()
+    # TwoPlayer()
+    PlayerVsBot()
 
     window.mainloop()

@@ -145,6 +145,7 @@ class Snake:
 
     def disappear(self):
         self.head.delete()
+        self.head.pos = Pos(500, 500)
         self.tail.delete()
         for b in self.bodies:
             b.delete()
